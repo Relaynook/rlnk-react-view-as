@@ -1,24 +1,83 @@
 # rlnk-react-view-as
 
-React admin SPA 的**角色視角切換(view-as / act-as)** 系統。Zustand store + hook + headless controller;UI 交給你自家 stack。
+Role view-as (act-as) system for React admin SPAs. Zustand store + hook + headless dropdown controller; you bring your own UI stack.
 
-Generic 對你專案的 `TSystemRole` union,只要注入 role 定義就能用。
+Generic over your project's `TSystemRole` union — inject your role definitions and it works.
 
-## 安裝
+## Install
 
-Package 發佈在 **npmjs.com 公開 registry**(MIT license)。零認證、零 `.npmrc` 設定:
+Published to **npmjs.com public registry** (MIT). No auth, no `.npmrc` setup:
 
 ```bash
 bun add rlnk-react-view-as
-# 或
+# or
 npm install rlnk-react-view-as
 ```
 
-Peer deps 需 `react >= 18` + `zustand >= 4`。
+Peer deps: `react >= 18`, `zustand >= 4`.
 
-## 使用
+## Integrate with AI agent (one-click copy)
 
-**一次建立,export 給整個 app 用**:
+Copy the prompt block below and paste it into Claude / ChatGPT / Cursor with your project specifics filled in — the agent will generate the wire-up code for you.
+
+````markdown
+I need to integrate the npm package **rlnk-react-view-as** (role view-as kit) into my React admin SPA. Please help me finish the integration.
+
+## Package summary
+- **What**: role view-as (act-as) system for React admin SPA
+- **Provides**: Zustand store + `useEffectiveRole` hook + `useViewAsController` headless dropdown hook
+- **UI**: no UI components — you build the dropdown with your own UI library
+- **Peer deps**: `react >= 18`, `zustand >= 4`
+
+## My project context (please confirm)
+- **UI stack**: __[e.g. React + Vite / Next.js / ...]__
+- **Dropdown library**: __[base-ui / radix-ui / headless-ui / hand-rolled / ...]__
+- **Auth store**: __[Zustand / Redux / Context / other]__ — `currentUser.role` holds current role
+- **System role union**: e.g. `'super_admin' | 'org_admin' | 'hr_admin' | 'member'`
+- **Custom role source**: __[backend `/api/roles` returns all roles / no custom roles, only system]__
+- **Permission code format**: __[short codes like `user.list` / or fully-qualified like `web-ad.user.list`]__ — if backend stores full keys but frontend nav uses short codes, `normalizePermission` should strip the prefix
+
+## Tasks
+
+1. **Create `src/lib/view-as.ts`** — one-shot `createViewAsSystem<TSystemRole>` config wire-up including:
+   - `storageKey` (zustand persist key, e.g. `<app-name>:view-as-role`)
+   - `storage: 'session'` (cleared when the tab closes; security default) or `'local'`
+   - `systemRoles` (use `as const` so TS infers `TSystemRole`)
+   - `canViewAs` (typically only `super_admin` returns true)
+   - `rolePermissions` (system role → `Set<permission code>`)
+   - `labelFor` (role code → display name)
+   - `useActualRole` (read `currentUser.role` from your auth store)
+   - `useRolesData` (fetch full role list from your backend via react-query / SWR; omit if there are no custom roles)
+   - `normalizePermission` (optional — strip client prefix from permission strings)
+
+2. **Consume in components**:
+   - `useEffectiveRole()` — use `hasPermission(code)` for permission gates, `effectiveRoleName` for labels
+   - `useViewAsController()` — build the dropdown selector with the UI library I specified above:
+     - `canViewAs` (return `null` if false)
+     - `allRoles` (already sorted: system first, then custom) — map to dropdown options
+     - `currentLabel` (trigger text)
+     - `pick(code)` / `reset()`
+     - `isViewAs` (show banner + reset button when true)
+
+3. **Remember**:
+   - `useEffectiveRole` calls `useQuery` under the hood (via `useRolesData`), so `renderHook` tests need a `QueryClientProvider` wrapper
+   - Call `useViewAsStore.getState().reset()` on logout to clear the override
+   - `useRolesData`'s return list is what the dropdown shows verbatim — the kit does **not** filter or merge — if the backend returns all roles, the dropdown shows all roles
+
+## Deliverables
+
+- `src/lib/view-as.ts` (full config)
+- A working `<ViewAsSelector />` component using the dropdown library I specified
+- An in-component permission gate example: `const { hasPermission } = useEffectiveRole(); if (!hasPermission('user.list')) return <Forbidden />`
+
+First confirm my **project context** above and fill in every `__[...]__` blank, then generate the code.
+````
+
+Before pasting the prompt, decide on your role code / permission naming conventions, dropdown library, and role-fetching mechanism — the agent needs these upfront.
+
+## Usage
+
+**Wire the kit once and export the hooks for the whole app**:
 
 ```ts
 // src/lib/view-as.ts
@@ -29,59 +88,67 @@ import { ROLE_LABEL, ROLE_PERMISSIONS } from '@/lib/roles'
 
 export const { useViewAsStore, useEffectiveRole, useViewAsController } =
   createViewAsSystem({
-    // Zustand storage key,多 app 同 origin 要不同名
+    // zustand persist key. If multiple apps share the same origin,
+    // give each a distinct key so their storage doesn't collide.
+    // Convention: `<app-name>:view-as-role`, e.g. `org-mgmt:view-as-role`.
     storageKey: 'org-mgmt:view-as-role',
-    // 'session' (default) 關 tab 清;'local' 跨 session 保留
+    // 'session' (default) clears on tab close; 'local' persists across sessions
     storage: 'session',
 
-    // 系統 role union — 用 `as const` 讓 TS 推 TSystemRole
+    // System role union — use `as const` so TS infers TSystemRole
     systemRoles: ['super_admin', 'org_admin', 'hr_admin', 'member'] as const,
 
-    // 誰有資格切 view-as
+    // Who is allowed to switch view-as
     canViewAs: (actual) => actual === 'super_admin',
 
-    // 系統 role → effective permissions;view-as 切到 system 或未切都用這表
+    // System role → effective permissions. Used both when no override is set
+    // and when the override picks a system role.
     rolePermissions: ROLE_PERMISSIONS,
 
-    // role code → 顯示名。傳 undefined 表未定義,hook 會退回原字面
+    // Role code → display name. Return `undefined` if unknown — the hook falls
+    // back to the raw code.
     labelFor: (code) => ROLE_LABEL[code as keyof typeof ROLE_LABEL],
 
-    // Consumer 提供的 hook,回目前登入 user 的 actual role
+    // Hook that returns the current logged-in user's real role
     useActualRole: () => useAuthStore((s) => s.currentUser?.role ?? null),
 
-    // (選配) 提供 dropdown 要顯示的完整 role list (kit 不 filter,不 merge)。
-    // Backend 若回全部 (含 system + custom) 直接 pass through 即可,kit 用
-    // systemRoles config 判 isSystem 給 badge / sort。沒提供 → kit 用
-    // systemRoles config 產 fallback 選項 (適合沒 custom role 概念的 app)
+    // (Optional) Hook that returns the full role list to show in the dropdown
+    // (system + custom). Pass the backend list through as-is — the kit will
+    // NOT filter or merge; whatever you return is what the dropdown displays.
+    // Use `systemRoles` in config to hint isSystem badges / sort ordering.
     useRolesData: () => useRolesQuery().data,
 
-    // (選配) permission literal 轉換 — 如剝掉 client prefix
+    // (Optional) Transform permission literals — useful for stripping a client
+    // prefix so the frontend can check short codes.
     normalizePermission: (p) =>
       p === 'web-ad.*' ? '*' : p.startsWith('web-ad.') ? p.slice(7) : p,
   })
 ```
 
-之後在 component 內:
+Then in components:
 
 ```tsx
-// 檢查權限
+// Gate a page on a permission
 function UserListPage() {
   const { hasPermission } = useEffectiveRole()
   if (!hasPermission('user.list')) return <Forbidden />
   return <UserTable />
 }
 
-// 顯示當前 view-as
+// Show the current view-as label
 function Header() {
   const { effectiveRoleName, isViewAs } = useEffectiveRole()
-  return <div>{isViewAs && <span>正在以 {effectiveRoleName} 視角</span>}</div>
+  return <div>{isViewAs && <span>Viewing as {effectiveRoleName}</span>}</div>
 }
 
-// 自建下拉選單 UI (kit 只提供 headless controller,UI 你自己接)
+// Build your own dropdown (kit only supplies the headless controller)
 function ViewAsSelector() {
-  const { canViewAs, currentLabel, allRoles, actualRole, pick, reset, isViewAs } =
-    useViewAsController()
+  const {
+    canViewAs, currentLabel, allRoles, actualRole, pick, reset, isViewAs,
+  } = useViewAsController()
+
   if (!canViewAs) return null
+
   return (
     <Menu>
       <MenuTrigger>{currentLabel}</MenuTrigger>
@@ -89,12 +156,12 @@ function ViewAsSelector() {
         {allRoles.map((r) => (
           <MenuItem key={r.code} onClick={() => pick(r.code)}>
             {r.name}
-            {r.code === actualRole && ' (我自己)'}
+            {r.code === actualRole && ' (me)'}
             {!r.isSystem && ' [custom]'}
           </MenuItem>
         ))}
       </MenuList>
-      {isViewAs && <button onClick={reset}>回到我的視角</button>}
+      {isViewAs && <button onClick={reset}>Back to my view</button>}
     </Menu>
   )
 }
@@ -104,57 +171,59 @@ function ViewAsSelector() {
 
 ### `createViewAsSystem<TSystemRole>(config)`
 
-一次配好,回 `{ useViewAsStore, useEffectiveRole, useViewAsController }`。
+One call, returns `{ useViewAsStore, useEffectiveRole, useViewAsController }` — export them for use throughout the app.
 
-### `useEffectiveRole()` 回
+### `useEffectiveRole()`
 
-| Field | Type | 說明 |
+| Field | Type | Description |
 |---|---|---|
-| `actualRole` | `TSystemRole \| null` | 真實 role,永不被 view-as 改變 |
-| `effectiveRole` | `string \| null` | UI render 用 role code(含 custom) |
-| `effectiveRoleName` | `string \| null` | 顯示名 |
-| `isViewAs` | `boolean` | 是否在 view-as 模式 |
-| `canViewAs` | `boolean` | 當前 user 是否有資格切 |
-| `hasPermission(code)` | `(code: string) => boolean` | 檢查 effective role 有無此 permission,wildcard-aware |
-| `isRole(code)` | `(code: string) => boolean` | effective role 是否等於此 code |
+| `actualRole` | `TSystemRole \| null` | The real role — never changed by view-as |
+| `effectiveRole` | `string \| null` | Role code the UI should render as (may be a custom code) |
+| `effectiveRoleName` | `string \| null` | Display name |
+| `isViewAs` | `boolean` | True when in view-as mode |
+| `canViewAs` | `boolean` | Whether the current user is allowed to switch |
+| `hasPermission(code)` | `(code: string) => boolean` | Wildcard-aware permission check against the effective role |
+| `isRole(code)` | `(code: string) => boolean` | Whether the effective role equals the given code |
 
-### `useViewAsController()` 回(給 dropdown UI 用)
+### `useViewAsController()` — for building the dropdown UI
 
-| Field | Type | 說明 |
+| Field | Type | Description |
 |---|---|---|
-| `canViewAs` | `boolean` | 沒資格 → UI 應 `return null` |
-| `actualRole` / `effectiveRole` | `string \| null` | 用於標記「我自己」/ 顯示當前選項 |
-| `currentLabel` | `string` | 目前顯示的 role 名稱 |
-| `isViewAs` | `boolean` | 是否正在切(顯示 reset 按鈕用) |
-| `allRoles` | `ViewAsRoleOption[]` | 已排序:system 先,custom 後 |
-| `pick(code)` | `(code: string) => void` | 切到某 role,`code === actualRole` 等同 reset |
-| `reset()` | `() => void` | 回本人 |
+| `canViewAs` | `boolean` | If false, `return null` |
+| `actualRole` / `effectiveRole` | `string \| null` | Used to mark "me" / highlight current |
+| `currentLabel` | `string` | Text for the dropdown trigger |
+| `isViewAs` | `boolean` | Whether to show the reset button |
+| `allRoles` | `ViewAsRoleOption[]` | Sorted: system first, custom next |
+| `pick(code)` | `(code: string) => void` | Switch to a role; `code === actualRole` behaves like reset |
+| `reset()` | `() => void` | Back to the real user's view |
 
-### `useViewAsStore` 直接存取(rarely needed)
+### `useViewAsStore` (direct access, rarely needed)
 
-logout 時 call `useViewAsStore.getState().reset()` 清 override。
+Call `useViewAsStore.getState().reset()` on logout to clear the persisted override.
 
 ### `permissionSetMatches(permissions, code)`
 
-Wildcard-aware:`*` 或 `<prefix>.*` 或精準字面。獨立 export 給 consumer 內部 permission check 用。
+Wildcard-aware check: matches `*`, `<prefix>.*`, or the exact literal. Exported separately for consumers doing their own permission checks.
 
 ## Design decisions
 
-- **Headless UI**:kit 不強推 UI library(base-ui / radix / headless-ui / 自幹皆可)。給 controller hook,你組 dropdown。
-- **`useRolesData` 為 hook 而非 data**:讓 consumer 用自家 react-query / SWR / 手撈都行,不綁 fetch 方式。
-- **`useActualRole` 為 hook 而非 store**:同上,不強推 zustand。實際 kit 內部確實用 zustand 存 override state,但**這是 kit 家的事**,consumer 不用感受到。
-- **`storage: 'session'` 預設**:對齊 admin SPA 安全預設(關 tab 就清)。dev 想快速反覆測改 `local`。
+- **Headless UI**: The kit doesn't ship UI components — you use base-ui / radix / headless-ui / hand-rolled elements. It gives you a controller hook and you wire the dropdown.
+- **`useRolesData` is a hook, not data**: Lets consumers use react-query / SWR / anything, without coupling the kit to a fetching strategy.
+- **`useActualRole` is a hook, not a store**: Same reason — you're free to store auth in Zustand, Redux, or elsewhere. The kit internally uses Zustand for the override state, but that's an implementation detail.
+- **`storage: 'session'` by default**: Safer default (override clears when the tab closes) — matches typical admin-SPA policy. Switch to `'local'` if you want overrides to persist for dev iteration.
+- **The kit doesn't filter or merge roles**: What you pass to `useRolesData` is exactly what appears in the dropdown. This avoids the leaky abstraction where the consumer would have to know which roles the kit auto-populates.
 
 ## Release
 
-Tag `v0.1.0` push 到 GitHub → workflow 自動 build + publish 到 GitHub Package Registry。
+Tag `v0.x.y` and push — the `.github/workflows/publish.yml` workflow will run `npm publish` to the public registry.
 
 ```bash
-# bump version
 npm version patch  # or minor / major
 git push --follow-tags
 ```
 
+Local one-off publishes work too: `npm publish` from the repo root (requires npm login + 2FA).
+
 ## License
 
-MIT — see [LICENSE](LICENSE)。
+MIT — see [LICENSE](LICENSE).
