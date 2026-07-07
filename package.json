@@ -1,5 +1,5 @@
 {
-  "name": "@relaynook/react-view-as",
+  "name": "rlnk-react-view-as",
   "version": "0.1.2",
   "description": "Role view-as (act-as) system for React admin SPAs — Zustand store + hook + dropdown UI, generic over your role type.",
   "type": "module",
@@ -35,8 +35,7 @@
     "zustand": "^5"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org",
-    "access": "public"
+    "registry": "https://registry.npmjs.org"
   },
   "repository": {
     "type": "git",

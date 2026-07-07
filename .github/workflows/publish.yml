@@ -15,6 +15,10 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # npm --provenance 需要 OIDC token 讓 npm registry 驗簽是 GH Actions 發的
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +28,9 @@ jobs:
         with:
           node-version: '20'
           # Publish 到 npmjs.com 官方 registry (公開 package 免費、無認證下載)。
+          # 無 scope package (rlnk-react-view-as) 直接 publish,不用 --access flag
+          # (unscoped 預設 public)。
           registry-url: 'https://registry.npmjs.org'
-          scope: '@relaynook'
 
       - name: Install deps
         run: npm ci
@@ -52,6 +57,6 @@ jobs:
       # publishConfig.access=public 讓 npm 知道要 publish 為 public,不然
       # scoped package 預設 restricted。
       - name: Publish
-        run: npm publish --provenance --access public
+        run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,4 +1,4 @@
-# @relaynook/react-view-as
+# rlnk-react-view-as
 
 React admin SPA 的**角色視角切換(view-as / act-as)** 系統。Zustand store + hook + headless controller;UI 交給你自家 stack。
 
@@ -9,9 +9,9 @@ Generic 對你專案的 `TSystemRole` union,只要注入 role 定義就能用。
 Package 發佈在 **npmjs.com 公開 registry**(MIT license)。零認證、零 `.npmrc` 設定:
 
 ```bash
-bun add @relaynook/react-view-as
+bun add rlnk-react-view-as
 # 或
-npm install @relaynook/react-view-as
+npm install rlnk-react-view-as
 ```
 
 Peer deps 需 `react >= 18` + `zustand >= 4`。
@@ -22,7 +22,7 @@ Peer deps 需 `react >= 18` + `zustand >= 4`。
 
 ```ts
 // src/lib/view-as.ts
-import { createViewAsSystem } from '@relaynook/react-view-as'
+import { createViewAsSystem } from 'rlnk-react-view-as'
 import { useAuthStore } from '@/stores/auth'
 import { useRolesQuery } from '@/api/queries/roles'
 import { ROLE_LABEL, ROLE_PERMISSIONS } from '@/lib/roles'

@@ -21,7 +21,7 @@ import type { UseViewAsControllerResult } from './create-use-view-as-controller'
  *
  * ```ts
  * // src/lib/view-as.ts
- * import { createViewAsSystem } from '@relaynook/react-view-as'
+ * import { createViewAsSystem } from 'rlnk-react-view-as'
  * import { useAuthStore } from '@/stores/auth'
  * import { useRolesQuery } from '@/api/queries/roles'
  * import { ROLE_LABEL, ROLE_PERMISSIONS } from '@/lib/roles'

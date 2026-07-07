@@ -1,5 +1,5 @@
 /**
- * @relaynook/react-view-as
+ * rlnk-react-view-as
  *
  * Role view-as (act-as) system for React admin SPAs。
  *
