@@ -5,6 +5,7 @@ import {
 import {
   createUseViewAsController,
   type CreateUseViewAsControllerOptions,
+  type UseViewAsControllerResult,
 } from './create-use-view-as-controller'
 import {
   createViewAsStore,
@@ -12,7 +13,6 @@ import {
   type ViewAsStore,
 } from './create-view-as-store'
 import type { UseEffectiveRoleResult } from './types'
-import type { UseViewAsControllerResult } from './create-use-view-as-controller'
 
 /**
  * 一次 config,拿回整組 view-as hook。
@@ -34,25 +34,22 @@ import type { UseViewAsControllerResult } from './create-use-view-as-controller'
  *     rolePermissions: ROLE_PERMISSIONS,
  *     labelFor: (code) => ROLE_LABEL[code as keyof typeof ROLE_LABEL],
  *     useActualRole: () => useAuthStore((s) => s.currentUser?.role ?? null),
- *     useCustomRolesData: () => useRolesQuery().data,
+ *     // Backend 通常回全部 role (含 system + custom),kit 不 filter,直接 pass through
+ *     useRolesData: () => useRolesQuery().data,
  *   })
  * ```
  */
 export interface CreateViewAsSystemOptions<TSystemRole extends string>
-  extends CreateViewAsStoreOptions,
-    Omit<CreateUseEffectiveRoleOptions<TSystemRole>, 'systemRoles' | 'canViewAs' | 'labelFor' | 'useActualRole' | 'useCustomRolesData'>,
-    Pick<
-      CreateUseEffectiveRoleOptions<TSystemRole>,
-      | 'systemRoles'
-      | 'canViewAs'
-      | 'labelFor'
-      | 'useActualRole'
-      | 'useCustomRolesData'
-      | 'rolePermissions'
-      | 'normalizePermission'
-    > {
+  extends CreateViewAsStoreOptions {
+  systemRoles: readonly TSystemRole[]
+  canViewAs: (actualRole: TSystemRole | null) => boolean
+  rolePermissions: Record<TSystemRole, ReadonlySet<string>>
+  labelFor: (code: string) => string | undefined
+  useActualRole: () => TSystemRole | null
+  useRolesData?: CreateUseEffectiveRoleOptions<TSystemRole>['useRolesData']
+  normalizePermission?: CreateUseEffectiveRoleOptions<TSystemRole>['normalizePermission']
   /**
-   * (選配)view-as controller 的 role 排序 comparator。預設 system role 在前
+   * (選配) view-as controller 的 role 排序 comparator。預設 system role 在前
    * 且照 systemRoles config 的順序;custom role 依 name locale compare。
    */
   compareRoles?: CreateUseViewAsControllerOptions<TSystemRole>['compareRoles']
@@ -75,7 +72,7 @@ export function createViewAsSystem<TSystemRole extends string>(
     rolePermissions,
     labelFor,
     useActualRole,
-    useCustomRolesData,
+    useRolesData,
     normalizePermission,
     compareRoles,
   } = options
@@ -88,7 +85,7 @@ export function createViewAsSystem<TSystemRole extends string>(
     rolePermissions,
     labelFor,
     useActualRole,
-    useCustomRolesData,
+    useRolesData,
     normalizePermission,
   })
 
@@ -97,7 +94,7 @@ export function createViewAsSystem<TSystemRole extends string>(
     canViewAs,
     labelFor,
     useActualRole,
-    useCustomRolesData,
+    useRolesData,
     compareRoles,
   })
 

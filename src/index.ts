@@ -4,7 +4,7 @@
  * Role view-as (act-as) system for React admin SPAs。
  *
  * 主要入口:
- *   - `createViewAsSystem<TSystemRole>()`: 一次 config,吐一組 hook 給 app 用
+ *   - `createViewAsSystem<TSystemRole>()`:一次 config,吐一組 hook 給 app 用
  *
  * 若你想更細粒度控制 (自己組 store / hook / controller):
  *   - `createViewAsStore()`
@@ -12,7 +12,7 @@
  *   - `createUseViewAsController()`
  *
  * 也 export helper:
- *   - `permissionSetMatches(permissions, code)`: wildcard-aware permission check
+ *   - `permissionSetMatches(permissions, code)`:wildcard-aware permission check
  */
 
 export {
@@ -42,4 +42,9 @@ export {
 
 export { permissionSetMatches } from './permission-set-matches'
 
-export type { CustomRoleData, UseEffectiveRoleResult } from './types'
+export type {
+  RoleData,
+  UseEffectiveRoleResult,
+  /** @deprecated 用 `RoleData`;v0.2 前保留 alias */
+  CustomRoleData,
+} from './types'

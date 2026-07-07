@@ -49,9 +49,11 @@ export const { useViewAsStore, useEffectiveRole, useViewAsController } =
     // Consumer 提供的 hook,回目前登入 user 的 actual role
     useActualRole: () => useAuthStore((s) => s.currentUser?.role ?? null),
 
-    // (選配) admin 自建 custom roles fetch hook。view-as 切到 custom 時
-    // 從這裡拿 permissions + name。沒提供 = view-as 只能切 system role
-    useCustomRolesData: () => useRolesQuery().data,
+    // (選配) 提供 dropdown 要顯示的完整 role list (kit 不 filter,不 merge)。
+    // Backend 若回全部 (含 system + custom) 直接 pass through 即可,kit 用
+    // systemRoles config 判 isSystem 給 badge / sort。沒提供 → kit 用
+    // systemRoles config 產 fallback 選項 (適合沒 custom role 概念的 app)
+    useRolesData: () => useRolesQuery().data,
 
     // (選配) permission literal 轉換 — 如剝掉 client prefix
     normalizePermission: (p) =>
@@ -139,7 +141,7 @@ Wildcard-aware:`*` 或 `<prefix>.*` 或精準字面。獨立 export 給 consumer
 ## Design decisions
 
 - **Headless UI**:kit 不強推 UI library(base-ui / radix / headless-ui / 自幹皆可)。給 controller hook,你組 dropdown。
-- **`useCustomRolesData` 為 hook 而非 data**:讓 consumer 用自家 react-query / SWR / 手撈都行,不綁 fetch 方式。
+- **`useRolesData` 為 hook 而非 data**:讓 consumer 用自家 react-query / SWR / 手撈都行,不綁 fetch 方式。
 - **`useActualRole` 為 hook 而非 store**:同上,不強推 zustand。實際 kit 內部確實用 zustand 存 override state,但**這是 kit 家的事**,consumer 不用感受到。
 - **`storage: 'session'` 預設**:對齊 admin SPA 安全預設(關 tab 就清)。dev 想快速反覆測改 `local`。
 
