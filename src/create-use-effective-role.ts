@@ -93,16 +93,18 @@ export function createUseEffectiveRole<TSystemRole extends string>(
       const eligible = canViewAs(actualRole)
 
       // 決定 override 是否**有效**:
-      //   - 若 rolesData 已載入 → 必須落在 systemRoles 或 rolesData 內才算 valid
-      //   - 若 rolesData 未載入 (undefined) → 只要 systemRole 就算 valid
-      //     (custom role 因為驗不了先容忍;等 rolesData 載入後如果不在裡面自動失效)
-      // 無效 override → 完全 fallback 到 actual (effectiveRole = actual,
-      // permissions 也是 actual 的)。這修 AC-008:sessionStorage 值被人為改
-      // 成無效 code 不該讓 UI 進 view-as 狀態。
+      //   - System role → 直接算 valid (systemRoles config 本地驗)
+      //   - Custom role → 必須在 rolesData 內找得到才算 valid
+      //   - rolesData 尚未載入 (undefined) → 只有 systemRole 算 valid,custom
+      //     視為未知 (fallback 到 actual)。載入後若確實在 rolesData 內,
+      //     effectiveRole 會自動恢復到該 custom。這個「載入期 UX 短暫 reset」
+      //     的權衡刻意選擇,不然無效字面 (sessionStorage 被人為改成 garbage)
+      //     會讓 UI 進 view-as 狀態卻沒 permissions,更糟。
+      // 無效 override → 完全 fallback 到 actual (AC-008)。
       const overrideKnown =
         override !== null &&
         (isSystemRoleCode(override) ||
-          (rolesData?.some((r) => r.code === override) ?? true))
+          (rolesData !== undefined && rolesData.some((r) => r.code === override)))
 
       const overrideEligible =
         eligible && override !== null && override !== actualRole && overrideKnown
