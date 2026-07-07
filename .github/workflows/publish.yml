@@ -57,6 +57,8 @@ jobs:
       # publishConfig.access=public 讓 npm 知道要 publish 為 public,不然
       # scoped package 預設 restricted。
       - name: Publish
-        run: npm publish --provenance
+        # --access public 必須,即使 unscoped 預設公開:npm --provenance 對「首發
+        # 或私有 package」要求顯式 access 宣告,不加會 EUSAGE 失敗。
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
