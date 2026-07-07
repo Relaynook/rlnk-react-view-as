@@ -6,16 +6,15 @@ Generic 對你專案的 `TSystemRole` union,只要注入 role 定義就能用。
 
 ## 安裝
 
-Package 發佈在 **GitHub Package Registry** (private,scope `@relaynook`)。專案根加 `.npmrc`:
+Package 發佈在 **GitHub Package Registry**(公開,MIT license)。
+
+專案根加 `.npmrc`(告訴 npm/bun 從 GH Registry 拉 `@relaynook` scope):
 
 ```
 @relaynook:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
 ```
 
-`NPM_TOKEN` 用 [GitHub PAT (classic)](https://github.com/settings/tokens) 建,scope 勾 `read:packages`。CI 內走 `${{ secrets.GITHUB_TOKEN }}` 即可(有 `packages: read` permission 就夠)。
-
-然後:
+公開 package 不需要 token / PAT。然後:
 
 ```bash
 bun add @relaynook/react-view-as
@@ -164,4 +163,4 @@ git push --follow-tags
 
 ## License
 
-UNLICENSED — internal use only。
+MIT — see [LICENSE](LICENSE)。

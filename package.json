@@ -1,6 +1,6 @@
 {
   "name": "@relaynook/react-view-as",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Role view-as (act-as) system for React admin SPAs — Zustand store + hook + dropdown UI, generic over your role type.",
   "type": "module",
   "sideEffects": false,
@@ -36,7 +36,7 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
-    "access": "restricted"
+    "access": "public"
   },
   "repository": {
     "type": "git",
@@ -53,5 +53,5 @@
     "rbac"
   ],
   "author": "Relaynook",
-  "license": "UNLICENSED"
+  "license": "MIT"
 }
