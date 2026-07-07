@@ -6,15 +6,7 @@ Generic 對你專案的 `TSystemRole` union,只要注入 role 定義就能用。
 
 ## 安裝
 
-Package 發佈在 **GitHub Package Registry**(公開,MIT license)。
-
-專案根加 `.npmrc`(告訴 npm/bun 從 GH Registry 拉 `@relaynook` scope):
-
-```
-@relaynook:registry=https://npm.pkg.github.com
-```
-
-公開 package 不需要 token / PAT。然後:
+Package 發佈在 **npmjs.com 公開 registry**(MIT license)。零認證、零 `.npmrc` 設定:
 
 ```bash
 bun add @relaynook/react-view-as

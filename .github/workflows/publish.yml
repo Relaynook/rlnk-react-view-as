@@ -1,6 +1,6 @@
-name: Publish to GitHub Package Registry
+name: Publish to npm registry
 
-# 觸發:push tag `v*` (如 v0.1.0)。也支援手動 workflow_dispatch 給人工重跑用。
+# 觸發:push tag `v*` (如 v0.1.2)。也支援手動 workflow_dispatch 給人工重跑用。
 on:
   push:
     tags:
@@ -15,10 +15,6 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      # 讓 GITHUB_TOKEN 可以 publish package 到 GH Package Registry
-      packages: write
 
     steps:
       - uses: actions/checkout@v4
@@ -27,8 +23,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # 註冊 GH Package Registry;always-auth 讓 npm publish 帶認證
-          registry-url: 'https://npm.pkg.github.com'
+          # Publish 到 npmjs.com 官方 registry (公開 package 免費、無認證下載)。
+          registry-url: 'https://registry.npmjs.org'
           scope: '@relaynook'
 
       - name: Install deps
@@ -40,7 +36,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # 保險 check:package.json 內版本要跟 tag 對齊 (v0.1.0 → 0.1.0)
+      # 保險 check:package.json 內版本要跟 tag 對齊 (v0.1.2 → 0.1.2)
       - name: Verify version matches tag
         if: github.event_name == 'push'
         run: |
@@ -52,7 +48,10 @@ jobs:
           fi
           echo "✓ Version $PKG_VERSION matches tag"
 
+      # 用 npmjs.com 的 automation token (repo secret NPM_TOKEN)。
+      # publishConfig.access=public 讓 npm 知道要 publish 為 public,不然
+      # scoped package 預設 restricted。
       - name: Publish
-        run: npm publish
+        run: npm publish --provenance --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
